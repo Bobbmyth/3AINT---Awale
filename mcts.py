@@ -10,41 +10,60 @@ class MCTS:
         self.temps_max = temps_max
         self.temperature = temperature
         self.c = c
-    
+
     def coups_legaux(self, plateau: List[int], joueur_actif: int) -> List[int]:
+        """
+        Retourne les coups légaux (0-5) pour le joueur actif.
+        Le joueur actif a TOUJOURS ses cases en [0:6], l'adversaire en [6:12].
+        """
         coups = []
-        debut = 0 if joueur_actif == 1 else 6
-        fin = 6 if joueur_actif == 1 else 12
-        for case in range(debut, fin):
-            if plateau[case] > 0:
-                coups.append(case - debut)
+        adversaire_vide = sum(plateau[6:12]) == 0
+        for case in range(6):
+            if plateau[case] == 0:
+                continue
+            # Règle anti-famine : si l'adversaire n'a plus de graines,
+            # on ne joue que les coups qui lui en donnent
+            if adversaire_vide and plateau[case] <= 5 - case:
+                continue
+            coups.append(case)
         return coups
-    
+
     def jouer_coup(self, plateau: List[int], scores: List[int], joueur_actif: int, coup: int) -> Tuple[List[int], List[int]]:
+        """
+        Joue un coup et retourne le nouveau plateau et les nouveaux scores.
+        Convention : le joueur actif a TOUJOURS ses cases en [0:6].
+        Après le coup, le plateau est tourné pour que le joueur suivant
+        ait ses cases en [0:6].
+        """
         nouveau_plateau = deepcopy(plateau)
         nouveaux_scores = deepcopy(scores)
-        case = coup if joueur_actif == 1 else 6 + coup
-        graine = nouveau_plateau[case]
-        nouveau_plateau[case] = 0
-        case_courante = case
+
+        # Le joueur actif joue toujours une case en [0:6]
+        graine = nouveau_plateau[coup]
+        nouveau_plateau[coup] = 0
+        case_courante = coup
         while graine > 0:
             case_courante = (case_courante + 1) % 12
             nouveau_plateau[case_courante] += 1
             graine -= 1
-        if joueur_actif == 2:
-            score = 0
-            index = case_courante
-            while index >= 6 and (nouveau_plateau[index] == 2 or nouveau_plateau[index] == 3):
-                score += nouveau_plateau[index]
-                nouveau_plateau[index] = 0
-                index -= 1
-            nouveaux_scores[1] += score
+
+        # Récolte : si la dernière graine atterrit du côté adverse [6:11]
+        # avec 2 ou 3 graines, on récolte en remontant
+        score = 0
+        index = case_courante
+        while index >= 6 and (nouveau_plateau[index] == 2 or nouveau_plateau[index] == 3):
+            score += nouveau_plateau[index]
+            nouveau_plateau[index] = 0
+            index -= 1
+        nouveaux_scores[joueur_actif - 1] += score  # score au bon joueur
+
+        # Rotation : le joueur suivant prend sa place en [0:6]
         nouveau_plateau = nouveau_plateau[6:12] + nouveau_plateau[0:6]
         return nouveau_plateau, nouveaux_scores
-    
+
     def partie_terminee(self, plateau: List[int]) -> bool:
         return sum(plateau) == 0
-    
+
     def determiner_coup(self, plateau: List[int], scores: List[int], joueur_actif: int) -> int:
         racine = Sommet(plateau, scores, joueur_actif)
         debut = time.time()
@@ -57,7 +76,7 @@ class MCTS:
             feuille.retropropager(score)
             iterations += 1
         return self._selectionner_coup_final(racine)
-    
+
     def _selectionner_et_developper(self, sommet: Sommet) -> Sommet:
         courant = sommet
         while not self.partie_terminee(courant.plateau):
@@ -75,7 +94,7 @@ class MCTS:
                 enfant = courant.ajouter_enfant(coup, nouveau_plateau, nouveaux_scores, joueur_suivant)
                 return enfant
         return courant
-    
+
     def _simuler(self, sommet: Sommet) -> float:
         plateau_sim = deepcopy(sommet.plateau)
         scores_sim = deepcopy(sommet.scores)
@@ -90,7 +109,7 @@ class MCTS:
             joueur_sim = 2 if joueur_sim == 1 else 1
             iterations_sim += 1
         return self._evaluer_position(scores_sim, sommet.joueur_actif)
-    
+
     def _evaluer_position(self, scores: List[int], joueur_original: int) -> float:
         mon_score = scores[joueur_original - 1]
         autre_score = scores[2 - joueur_original]
@@ -100,7 +119,7 @@ class MCTS:
             return 0.0
         else:
             return 0.5
-    
+
     def _selectionner_coup_final(self, racine: Sommet) -> int:
         if not racine.enfants:
             return 0
