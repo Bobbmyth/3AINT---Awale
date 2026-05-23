@@ -1,8 +1,10 @@
+from copy import deepcopy
 import pygame
 from awale import awale
 from gui import GUI
 from human import Human
 from stupidBot import StupidBot
+from mcts import MCTS
 
 jeu = awale("Alice", "Bot")
 gui = GUI(jeu)
@@ -11,6 +13,7 @@ mode = gui.start_menu()
 
 joueur1 = Human(jeu)
 joueur2 = Human(jeu) if mode == "pvp" else StupidBot(jeu, 2)
+mcts = MCTS(iterations_max=500) if mode == "mcts" else None
 
 running = True
 clock = pygame.time.Clock()
@@ -31,9 +34,16 @@ while running:
                 if not jeu.tour_jeu(coup): 
                     running = False
 
-    if mode == "bot" and jeu.joueur_actif == 2 and running:
+    if jeu.joueur_actif == 2 and running and mode in ("bot", "mcts"):
         pygame.time.wait(500)
-        coup = joueur2.get_move()
+        if mode == "bot":
+            coup = joueur2.get_move()
+        else:
+            coup = mcts.determiner_coup(
+                deepcopy(jeu.plateau),
+                deepcopy(jeu.score),
+                jeu.joueur_actif
+            )
         if coup is not None:
             if not jeu.tour_jeu(coup):
                 running = False

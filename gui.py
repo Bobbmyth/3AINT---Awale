@@ -96,13 +96,15 @@ class GUI:
         btn_w, btn_h = 320, 55
         cx = (1000 - btn_w) // 2
 
-        pvp_button  = pygame.Rect(cx, 220, btn_w, btn_h)
-        bot_button  = pygame.Rect(cx, 300, btn_w, btn_h)
-        quit_button = pygame.Rect(cx, 380, btn_w, btn_h)
+        pvp_button  = pygame.Rect(cx, 180, btn_w, btn_h)
+        bot_button  = pygame.Rect(cx, 255, btn_w, btn_h)
+        mcts_button = pygame.Rect(cx, 330, btn_w, btn_h)
+        quit_button = pygame.Rect(cx, 405, btn_w, btn_h)
 
         buttons = [
             (pvp_button,  "Joueur vs Joueur", "pvp"),
             (bot_button,  "Joueur vs Bot",    "bot"),
+            (mcts_button, "Joueur vs MCTS",   "mcts"),
             (quit_button, "Quitter",          "quit"),
         ]
 

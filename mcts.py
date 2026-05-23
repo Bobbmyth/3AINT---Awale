@@ -17,16 +17,35 @@ class MCTS:
         Le joueur actif a TOUJOURS ses cases en [0:6], l'adversaire en [6:12].
         """
         coups = []
-        adversaire_vide = sum(plateau[6:12]) == 0
-        for case in range(6):
+        if joueur_actif == 1:
+            cases = range(0, 6)
+            adversaire_vide = sum(plateau[6:12]) == 0
+        else:
+            cases = range(6, 12)
+            adversaire_vide = sum(plateau[0:6]) == 0
+
+        for case in cases:
             if plateau[case] == 0:
                 continue
-            # Règle anti-famine : si l'adversaire n'a plus de graines,
-            # on ne joue que les coups qui lui en donnent
-            if adversaire_vide and plateau[case] <= 5 - case:
+            if adversaire_vide and not self._peut_nourrir(plateau, case, joueur_actif):
                 continue
             coups.append(case)
         return coups
+    
+    def _peut_nourrir(self, plateau: List[int], case: int, joueur_actif: int) -> bool:
+        graines = plateau[case]
+        pos = case
+        a_semer = graines
+        while a_semer > 0:
+            pos = (pos + 1) % 12
+            if pos == case:
+                pos = (pos + 1) % 12
+            if joueur_actif == 1 and pos >= 6:
+                return True
+            if joueur_actif == 2 and pos < 6:
+                return True
+            a_semer -= 1
+        return False
 
     def jouer_coup(self, plateau: List[int], scores: List[int], joueur_actif: int, coup: int) -> Tuple[List[int], List[int]]:
         """
@@ -44,22 +63,39 @@ class MCTS:
         case_courante = coup
         while graine > 0:
             case_courante = (case_courante + 1) % 12
+            if case_courante == coup:
+                case_courante = (case_courante + 1) % 12            
             nouveau_plateau[case_courante] += 1
             graine -= 1
+        cases_a_recolter = []
+        if joueur_actif == 1:
+            pos = case_courante
+            while pos >= 6 and (nouveau_plateau[pos] == 2 or nouveau_plateau[pos] == 3):
+                cases_a_recolter.append(pos)
+                pos -= 1
+            # Vérif anti-affamement
+            adversaire_apres = [nouveau_plateau[i] for i in range(6, 12)]
+            for p in cases_a_recolter:
+                adversaire_apres[p - 6] = 0
+            if sum(adversaire_apres) > 0:
+                for p in cases_a_recolter:
+                    nouveaux_scores[0] += nouveau_plateau[p]
+                    nouveau_plateau[p] = 0
+        else:
+            pos = case_courante
+            while pos <= 5 and (nouveau_plateau[pos] == 2 or nouveau_plateau[pos] == 3):
+                cases_a_recolter.append(pos)
+                pos -= 1
+            adversaire_apres = [nouveau_plateau[i] for i in range(0, 6)]
+            for p in cases_a_recolter:
+                adversaire_apres[p] = 0
+            if sum(adversaire_apres) > 0:
+                for p in cases_a_recolter:
+                    nouveaux_scores[1] += nouveau_plateau[p]
+                    nouveau_plateau[p] = 0
 
-        # Récolte : si la dernière graine atterrit du côté adverse [6:11]
-        # avec 2 ou 3 graines, on récolte en remontant
-        score = 0
-        index = case_courante
-        while index >= 6 and (nouveau_plateau[index] == 2 or nouveau_plateau[index] == 3):
-            score += nouveau_plateau[index]
-            nouveau_plateau[index] = 0
-            index -= 1
-        nouveaux_scores[joueur_actif - 1] += score  # score au bon joueur
-
-        # Rotation : le joueur suivant prend sa place en [0:6]
-        nouveau_plateau = nouveau_plateau[6:12] + nouveau_plateau[0:6]
-        return nouveau_plateau, nouveaux_scores
+        joueur_suivant = 2 if joueur_actif == 1 else 1
+        return nouveau_plateau, nouveaux_scores, joueur_suivant
 
     def partie_terminee(self, plateau: List[int]) -> bool:
         return sum(plateau) == 0
@@ -75,7 +111,11 @@ class MCTS:
             score = self._simuler(feuille)
             feuille.retropropager(score)
             iterations += 1
-        return self._selectionner_coup_final(racine)
+        coup = self._selectionner_coup_final(racine)
+        if joueur_actif == 2 and coup < 6:
+            coups = self.coups_legaux(plateau, joueur_actif)
+            return coups[0] if coups else 0
+        return coup
 
     def _selectionner_et_developper(self, sommet: Sommet) -> Sommet:
         courant = sommet
@@ -89,8 +129,7 @@ class MCTS:
             else:
                 coup = random.choice([c for c in coups_legaux if c not in courant.coups_tries])
                 courant.coups_tries.add(coup)
-                nouveau_plateau, nouveaux_scores = self.jouer_coup(courant.plateau, courant.scores, courant.joueur_actif, coup)
-                joueur_suivant = 2 if courant.joueur_actif == 1 else 1
+                nouveau_plateau, nouveaux_scores, joueur_suivant = self.jouer_coup(courant.plateau, courant.scores, courant.joueur_actif, coup)
                 enfant = courant.ajouter_enfant(coup, nouveau_plateau, nouveaux_scores, joueur_suivant)
                 return enfant
         return courant
@@ -102,11 +141,10 @@ class MCTS:
         iterations_sim = 0
         while not self.partie_terminee(plateau_sim) and iterations_sim < 100:
             coups_legaux = self.coups_legaux(plateau_sim, joueur_sim)
-            if len(coups_legaux) == 0:
+            if not coups_legaux:
                 break
             coup = random.choice(coups_legaux)
-            plateau_sim, scores_sim = self.jouer_coup(plateau_sim, scores_sim, joueur_sim, coup)
-            joueur_sim = 2 if joueur_sim == 1 else 1
+            plateau_sim, scores_sim, joueur_sim = self.jouer_coup(plateau_sim, scores_sim, joueur_sim, coup)
             iterations_sim += 1
         return self._evaluer_position(scores_sim, sommet.joueur_actif)
 
@@ -122,7 +160,8 @@ class MCTS:
 
     def _selectionner_coup_final(self, racine: Sommet) -> int:
         if not racine.enfants:
-            return 0
+            coups = self.coups_legaux(racine.plateau, racine.joueur_actif)
+            return coups[0] if coups else 0
         coups = list(racine.enfants.keys())
         visites = [racine.enfants[coup].visites for coup in coups]
         if self.temperature == 0:
