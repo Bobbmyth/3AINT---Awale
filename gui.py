@@ -96,15 +96,18 @@ class GUI:
         btn_w, btn_h = 320, 55
         cx = (1000 - btn_w) // 2
 
-        pvp_button  = pygame.Rect(cx, 180, btn_w, btn_h)
-        bot_button  = pygame.Rect(cx, 255, btn_w, btn_h)
-        mcts_button = pygame.Rect(cx, 330, btn_w, btn_h)
-        quit_button = pygame.Rect(cx, 405, btn_w, btn_h)
+        pvp_button  = pygame.Rect(cx, 160, btn_w, btn_h)
+        bot_button  = pygame.Rect(cx, 225, btn_w, btn_h)
+        mcts_button = pygame.Rect(cx, 290, btn_w, btn_h)
+        minmax_button = pygame.Rect(cx, 355, btn_w, btn_h)
+        
+        quit_button = pygame.Rect(cx, 420, btn_w, btn_h)
 
         buttons = [
             (pvp_button,  "Joueur vs Joueur", "pvp"),
             (bot_button,  "Joueur vs Bot",    "bot"),
             (mcts_button, "Joueur vs MCTS",   "mcts"),
+            (minmax_button, "Joueur vs MinMax",   "minmax"),
             (quit_button, "Quitter",          "quit"),
         ]
 
@@ -113,8 +116,8 @@ class GUI:
             mouse = pygame.mouse.get_pos()
             
             title = title_font.render("Jeu d'Awalé", True, BROWN)
-            self.screen.blit(title, (1000 // 2 - title.get_width() // 2, 80))
-            pygame.draw.line(self.screen, BROWN, (300, 175), (700, 175), 3)
+            self.screen.blit(title, (1000 // 2 - title.get_width() // 2, 70))
+            pygame.draw.line(self.screen, BROWN, (300, 155), (700, 155), 3)
             
             for rect, label, _ in buttons:
                 hovered = rect.collidepoint(mouse)

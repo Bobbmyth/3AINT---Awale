@@ -5,6 +5,7 @@ from gui import GUI
 from human import Human
 from stupidBot import StupidBot
 from mcts import MCTS
+from minmax import MinMax
 
 jeu = awale("Alice", "Bot")
 gui = GUI(jeu)
@@ -14,6 +15,7 @@ mode = gui.start_menu()
 joueur1 = Human(jeu)
 joueur2 = Human(jeu) if mode == "pvp" else StupidBot(jeu, 2)
 mcts = MCTS(iterations_max=500) if mode == "mcts" else None
+minmax = MinMax(profondeur=5)      if mode == "minmax" else None
 
 running = True
 clock = pygame.time.Clock()
@@ -34,16 +36,26 @@ while running:
                 if not jeu.tour_jeu(coup): 
                     running = False
 
-    if jeu.joueur_actif == 2 and running and mode in ("bot", "mcts"):
+    if jeu.joueur_actif == 2 and running and mode in ("bot", "mcts", "minmax"):
+        print(f"Bot joue, plateau: {jeu.plateau}, joueur: {jeu.joueur_actif}")
         pygame.time.wait(500)
         if mode == "bot":
             coup = joueur2.get_move()
-        else:
+            print(f"Coup choisi: {coup}")
+        elif mode == "mcts":
             coup = mcts.determiner_coup(
                 deepcopy(jeu.plateau),
                 deepcopy(jeu.score),
                 jeu.joueur_actif
             )
+        else:  # minmax
+            print(f"Bot joue, plateau: {jeu.plateau}, joueur: {jeu.joueur_actif}")
+            coup = minmax.determiner_coup(
+                deepcopy(jeu.plateau),
+                deepcopy(jeu.score),
+                jeu.joueur_actif,
+            )
+            print(f"Coup choisi: {coup}")
         if coup is not None:
             if not jeu.tour_jeu(coup):
                 running = False
