@@ -1,11 +1,11 @@
 """
 Module Sommet - Classe représentant un nœud de l'arborescence de jeu pour MCTS.
 La classe Sommet modélise un état du jeu Awalé avec ses statistiques MCTS.
+Version optimisée (0% deepcopy sur les propriétés).
 """
 
 import math
 from typing import Optional, List, Tuple
-from copy import deepcopy
 
 
 class Sommet:
@@ -14,8 +14,9 @@ class Sommet:
     def __init__(self, plateau: List[int], scores: List[int], joueur_actif: int, 
                  parent: Optional['Sommet'] = None):
         """Initialise un nouveau sommet."""
-        self.__plateau = deepcopy(plateau)
-        self.__scores = deepcopy(scores)
+        # On garde les copies à l'initialisation pour la sécurité de l'arbre
+        self.__plateau = plateau.copy()
+        self.__scores = scores.copy()
         self.__joueur_actif = joueur_actif
         self.__parent = parent
         self.__enfants = {}
@@ -25,13 +26,13 @@ class Sommet:
     
     @property
     def plateau(self) -> List[int]:
-        """Retourne une copie du plateau."""
-        return deepcopy(self.__plateau)
+        """Retourne une copie rapide du plateau sans deepcopy."""
+        return self.__plateau.copy()
     
     @property
     def scores(self) -> List[int]:
-        """Retourne une copie des scores."""
-        return deepcopy(self.__scores)
+        """Retourne une copie rapide des scores sans deepcopy."""
+        return self.__scores.copy()
     
     @property
     def joueur_actif(self) -> int:
@@ -87,7 +88,7 @@ class Sommet:
             return float('inf')
         
         exploitation = self.__victoires / self.__visites
-        exploration = c * math.sqrt(math.log(self.__parent.__visites) / self.__visites)
+        exploration = c * math.sqrt(math.log(self.__parent._Sommet__visites) / self.__visites)
         return exploitation + exploration
     
     def meilleur_enfant(self, c: float = 0) -> Tuple[int, 'Sommet']:
@@ -101,7 +102,7 @@ class Sommet:
         
         for coup, enfant in self.__enfants.items():
             if c == 0:
-                valeur = enfant.__victoires / enfant.__visites if enfant.__visites > 0 else 0
+                valeur = enfant._Sommet__victoires / enfant._Sommet__visites if enfant._Sommet__visites > 0 else 0
             else:
                 valeur = enfant.ucb1(c)
             

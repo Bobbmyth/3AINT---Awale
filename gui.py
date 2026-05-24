@@ -93,22 +93,24 @@ class GUI:
     def start_menu(self):
         title_font = pygame.font.SysFont("Arial", 64, bold=True)
         btn_font = pygame.font.SysFont("Arial", 36)
-        btn_w, btn_h = 320, 55
+        btn_w, btn_h = 320, 45  # Hauteur légèrement réduite (45 au lieu de 55) pour le confort visuel
         cx = (1000 - btn_w) // 2
 
-        pvp_button  = pygame.Rect(cx, 160, btn_w, btn_h)
-        bot_button  = pygame.Rect(cx, 225, btn_w, btn_h)
-        mcts_button = pygame.Rect(cx, 290, btn_w, btn_h)
-        minmax_button = pygame.Rect(cx, 355, btn_w, btn_h)
-        
-        quit_button = pygame.Rect(cx, 420, btn_w, btn_h)
+        # Définition des zones de clics de chaque bouton (ajustement vertical global)
+        pvp_button     = pygame.Rect(cx, 140, btn_w, btn_h)
+        bot_button     = pygame.Rect(cx, 195, btn_w, btn_h)
+        glouton_button = pygame.Rect(cx, 250, btn_w, btn_h)
+        mcts_button    = pygame.Rect(cx, 305, btn_w, btn_h)
+        minmax_button  = pygame.Rect(cx, 360, btn_w, btn_h)
+        quit_button    = pygame.Rect(cx, 415, btn_w, btn_h)
 
         buttons = [
-            (pvp_button,  "Joueur vs Joueur", "pvp"),
-            (bot_button,  "Joueur vs Bot",    "bot"),
-            (mcts_button, "Joueur vs MCTS",   "mcts"),
-            (minmax_button, "Joueur vs MinMax",   "minmax"),
-            (quit_button, "Quitter",          "quit"),
+            (pvp_button,     "Joueur vs Joueur",   "pvp"),
+            (bot_button,     "Joueur vs Bot",     "bot"),
+            (glouton_button, "Joueur vs Glouton", "glouton"),
+            (mcts_button,    "Joueur vs MCTS",    "mcts"),
+            (minmax_button,  "Joueur vs MinMax",  "minmax"),
+            (quit_button,    "Quitter",           "quit"),
         ]
 
         while True:
@@ -116,8 +118,8 @@ class GUI:
             mouse = pygame.mouse.get_pos()
             
             title = title_font.render("Jeu d'Awalé", True, BROWN)
-            self.screen.blit(title, (1000 // 2 - title.get_width() // 2, 70))
-            pygame.draw.line(self.screen, BROWN, (300, 155), (700, 155), 3)
+            self.screen.blit(title, (1000 // 2 - title.get_width() // 2, 40))
+            pygame.draw.line(self.screen, BROWN, (300, 125), (700, 125), 3)
             
             for rect, label, _ in buttons:
                 hovered = rect.collidepoint(mouse)
